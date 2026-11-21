@@ -58,15 +58,22 @@ internal sealed partial class IdleDetectionService(
 
             using var slowTimer = new PeriodicTimer(TimeSpan.FromSeconds(_opts.SlowCheckIntervalSeconds));
 
-            // Periodic resend timer (insurance if the light is turned ON unintentionally while idle)
-            using var resendTimer = new PeriodicTimer(TimeSpan.FromMinutes(_opts.PeriodicResendIntervalMinutes));
+            // The resend is opt-in; PeriodicTimer rejects a non-positive period, so it must not be built when disabled
+            using PeriodicTimer? resendTimer = _opts.PeriodicResendIntervalMinutes > 0
+                ? new PeriodicTimer(TimeSpan.FromMinutes(_opts.PeriodicResendIntervalMinutes))
+                : null;
 
             // Run the loops in parallel
-            await Task.WhenAll(
+            var loops = new List<Task>
+            {
                 RunFastCheckAsync(fastTimer, stoppingToken),
                 RunSlowCheckAsync(slowTimer, stoppingToken),
-                RunResendAsync(resendTimer, stoppingToken),
-                RunPowerEventLoopAsync(stoppingToken)).ConfigureAwait(false);
+                RunPowerEventLoopAsync(stoppingToken),
+            };
+            if (resendTimer is not null)
+                loops.Add(RunResendAsync(resendTimer, stoppingToken));
+
+            await Task.WhenAll(loops).ConfigureAwait(false);
         }
         finally
         {

@@ -17,8 +17,11 @@ internal sealed class IdleDetectionOptions
     /// <summary>Slow check interval in seconds. Used to detect that the idle threshold was exceeded.</summary>
     public int SlowCheckIntervalSeconds { get; init; } = 30;
 
-    /// <summary>Interval in minutes for re-sending OFF while idle, as insurance against the light being turned ON unintentionally.</summary>
-    public int PeriodicResendIntervalMinutes { get; init; } = 10;
+    /// <summary>
+    /// Interval in minutes for re-sending OFF while idle, as insurance against the light being turned ON unintentionally.
+    /// A value of 0 or less disables the resend, so a light turned ON externally after an idle OFF is left alone.
+    /// </summary>
+    public int PeriodicResendIntervalMinutes { get; init; }
 
     /// <summary>Cooldown in seconds after turning the light OFF during which ON is suppressed, to avoid false detections such as wireless device reconnects.</summary>
     public int CooldownSeconds { get; init; } = 60;
